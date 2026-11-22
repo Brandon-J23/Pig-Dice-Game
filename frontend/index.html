@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pig: play and watch the solvers</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="banner" id="banner" role="alert" hidden></div>
+
+  <div class="app">
+    <!-- ============================ game board ============================ -->
+    <main class="stage">
+      <section class="board" id="board" aria-label="Pig game board">
+        <section class="player" id="player0">
+          <h2 class="name">Player 1</h2>
+          <p class="who" id="who0"></p>
+          <p class="score" id="score0">0</p>
+          <div class="current" id="current0">
+            <p class="current-label">Current</p>
+            <p class="current-score" id="currentScore0">0</p>
+          </div>
+        </section>
+
+        <section class="player" id="player1">
+          <h2 class="name">Player 2</h2>
+          <p class="who" id="who1"></p>
+          <p class="score" id="score1">0</p>
+          <div class="current" id="current1">
+            <p class="current-label">Current</p>
+            <p class="current-score" id="currentScore1">0</p>
+          </div>
+        </section>
+
+        <button class="btn btn--new" id="btnNew" type="button">New game</button>
+        <div class="dice" id="dice" role="img" aria-label="Die showing 1">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <button class="btn btn--roll" id="btnRoll" type="button">Roll dice</button>
+        <button class="btn btn--hold" id="btnHold" type="button">Hold</button>
+
+        <p class="status" id="status" role="status" aria-live="polite"></p>
+      </section>
+      <p class="keys">Keyboard: <kbd>R</kbd> roll, <kbd>H</kbd> hold, <kbd>N</kbd> new game</p>
+    </main>
+
+    <!-- ============================ sidebar ============================ -->
+    <aside class="side">
+      <section class="card" aria-labelledby="hPlayers">
+        <h3 id="hPlayers">Players</h3>
+        <div id="setup"></div>
+        <div class="controls">
+          <label class="inline">AI speed
+            <select id="speed">
+              <option value="0">Instant</option>
+              <option value="1">Fast</option>
+              <option value="2" selected>Normal</option>
+              <option value="3">Slow</option>
+            </select>
+          </label>
+          <button class="chip" id="btnPause" type="button">Pause AI</button>
+          <button class="chip" id="btnStep" type="button" hidden>Step</button>
+        </div>
+        <p class="record" id="record"></p>
+      </section>
+
+      <section class="card" aria-labelledby="hPos">
+        <div class="card-head">
+          <h3 id="hPos">Position</h3>
+          <label class="inline small"><input type="checkbox" id="showHints" checked> Show exact values</label>
+        </div>
+        <div id="position"></div>
+      </section>
+
+      <section class="card" aria-labelledby="hAI">
+        <h3 id="hAI">Last AI decision</h3>
+        <div id="insight"><p class="muted">Nothing yet. Choose an AI for a player and the solver's reasoning appears here after each move.</p></div>
+      </section>
+
+    </aside>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

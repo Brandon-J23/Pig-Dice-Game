@@ -1,0 +1,16 @@
+{
+  "first_player_win_prob_optimal": 0.5305927252111864,
+  "e1_optimal_vs_fixed20": 0.522,
+  "optimal_threshold_examples": {
+    "0v0": 21,
+    "80v80": 20,
+    "20v90 (far behind)": 80,
+    "90v20 (far ahead)": 10
+  },
+  "runtime_ms_per_decision": {
+    "Fixed-20": 0.00029404958089192707,
+    "Optimal (lookup)": 0.0008980433146158854,
+    "Expectiminimax d4": 0.1438299814860026,
+    "MCTS-2000": 42.049590746561684
+  }
+}
