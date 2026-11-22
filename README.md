@@ -1,19 +1,19 @@
 # Pig AI – backend (CSE 352 extra credit)
 
 ```
-pig/game.py        engine: PigGame (state = (my_score, opp_score, turn_total))
-pig/solver.py      exact optimal policy via value iteration on the expectiminimax equations
-pig/agents.py      FixedThresholdAgent | OptimalAgent | ExpectiminimaxAgent(depth) | MCTSAgent(sims)
-pig/tournament.py  play_game, head_to_head (alternates who moves first, returns win rate + 95% CI)
-test_backend.py    sanity checks (matches published 53.06% first-player win prob)
-run_experiments.py all report experiments -> results/*.csv, *.png, summary.json, policy.json
+pig/game.py  --> engine: PigGame (state = (my_score, opp_score, turn_total))
+pig/solver.py  --> exact optimal policy via value iteration on the expectiminimax equations
+pig/agents.py  -->  FixedThresholdAgent | OptimalAgent | ExpectiminimaxAgent(depth) | MCTSAgent(sims)
+pig/tournament.py --> play_game, head_to_head (alternates who moves first, returns win rate + 95% CI)
+test_backend.py  --> sanity checks (matches published 53.06% first-player win prob)
+run_experiments.py  --> all report experiments -> results/*.csv, *.png, summary.json, policy.json
 ```
 
 Run: `pip install -r requirements.txt && python test_backend.py && python run_experiments.py --quick`
 (drop `--quick` for report-quality numbers; it takes much longer because of MCTS).
 
 ## Search-problem formulation
-* **State**: (my_score, opp_score, turn_total), from the mover's view. ~10^6 states (100x100x100).
+* **State**: (my_score, opp_score, turn_total), from the mover's view. ~505,000 valid, nonterminal states.
 * **Actions**: Roll; Hold (illegal when turn_total = 0).
 * **Transition**: Hold -> bank turn total, pass turn. Roll -> die uniform on 1..6: a 1 loses the turn total and passes the turn; 2-6 add to the turn total.
 * **Goal**: score + turn_total >= 100 (game ends immediately; equivalent to holding and winning).
