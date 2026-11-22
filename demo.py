@@ -1,8 +1,8 @@
 """Console demo: watch the AI play, or play against it.
 
-    python demo.py watch              # Optimal vs Fixed-20, every decision explained
-    python demo.py play               # you vs Optimal AI
-    python demo.py play --agent mcts  # you vs MCTS (--agent expecti | fixed | optimal)
+    python demo.py watch --> # Optimal vs Fixed-20, every decision explained
+    python demo.py play  -->  # you vs Optimal AI
+    python demo.py play --agent mcts  --> # you vs MCTS (--agent expecti | fixed | optimal)
 """
 import argparse, random
 from pig import *

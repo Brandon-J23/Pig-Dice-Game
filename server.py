@@ -2,13 +2,13 @@
 
     python server.py            ->  open http://localhost:8000
 
-It serves the static UI in ./frontend and exposes the *real* backend agents over a tiny
-JSON API, so the browser plays against the exact same Python code used in the experiments.
-Only the standard library is used (no Flask needed).
+It serves the static UI in ./frontend and exposes the *real* backend agents over a tiny JSON API, 
+so the browser plays against the exact same Python code used in the experiments. Only the standard 
+library is used (no Flask needed).
 
-    GET  /api/info    -> game constants + the agent types the UI can pick from
-    POST /api/eval    {state:[my, opp, k]}                 -> exact optimal values for a position
-    POST /api/move    {agent:{type,...}, state:[my,opp,k]} -> the agent's chosen action + its internals
+    GET  /api/info  -> game constants + the agent types the UI can pick from
+    POST /api/eval  {state:[my, opp, k]} -> exact optimal values for a position
+    POST /api/move  {agent:{type,...}, state:[my,opp,k]} -> the agent's chosen action + its internals
 
 The server is stateless: the browser owns the game state (it is just 3 numbers), the server is
 an "oracle" that answers "what would this agent do here?".
@@ -25,19 +25,20 @@ from pig import (ExpectiminimaxAgent, FixedThresholdAgent, MCTSAgent, OptimalAge
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 FRONTEND = os.path.join(ROOT, "frontend")
-TARGET = 100
-PORT = int(os.environ.get("PORT", 8000))
+TARGET = 100  # Score needed to win.
+PORT = int(os.environ.get("PORT", 8000))  # Allow the server port to be configured.
 
-# ------------------------------------------------------------------ solver (loaded once)
-print("Loading exact solver (uses policy_cache_100.npy if present, otherwise ~10 s to solve)...")
+# Load the exact solver once at startup.
+print("Loading exact solver...")
 SOLVER = PigSolver(TARGET).solve(cache_path=os.path.join(ROOT, "policy_cache_100.npy"))
 print("Solver ready.")
 
-LOCK = threading.Lock()   # MCTS / expectiminimax keep mutable state (rng, caches)
-AGENTS = {}               # agent instances reused between requests, keyed by config
+LOCK = threading.Lock()  # Prevent shared agent state from updating concurrently.
+AGENTS = {}  # Reuse agents by their configuration.
 
 
 def clamp(v, lo, hi, default):
+    # Safely convert a value to a bounded integer.
     try:
         return max(lo, min(hi, int(v)))
     except (TypeError, ValueError):
@@ -45,7 +46,7 @@ def clamp(v, lo, hi, default):
 
 
 def get_agent(cfg):
-    """Build (or reuse) an agent from a JSON config sent by the UI."""
+    # Create or reuse the agent selected by the UI.
     kind = cfg.get("type")
     if kind == "fixed":
         threshold = clamp(cfg.get("threshold"), 1, TARGET, 20)
@@ -67,14 +68,16 @@ def get_agent(cfg):
 
 
 def parse_state(raw):
+    # Convert the UI state into three integers.
     i, j, k = (int(x) for x in raw)
+    # Reject states outside the game limits.
     if not (0 <= i < TARGET and 0 <= j < TARGET and 0 <= k):
         raise ValueError("state out of range")
     return i, j, k
 
 
 def exact_values(i, j, k):
-    """Ground truth from value iteration: P(win) if roll / hold / best, for the mover."""
+    #Get exact roll, hold, and win values from the solver
     if i + k >= TARGET:
         return {"roll": None, "hold": 1.0, "win_prob": 1.0}
     roll, hold = SOLVER.q_values(i, j, k)
@@ -82,10 +85,10 @@ def exact_values(i, j, k):
 
 
 def agent_internals(kind, agent, state):
-    """What the agent 'was thinking' -- shown in the insight panel."""
+    #Collect details for the UI insight panel.
     i, j, k = state
     if kind == "mcts":
-        if k == 0:           # MCTSAgent skips the search when the roll is forced, so last_stats would be stale
+        if k == 0:  # No search occurs when rolling is the only option.
             return {}
         stats = agent.last_stats or {}
         return {"visits": {a: stats[a][0] for a in stats},
@@ -102,18 +105,19 @@ def agent_internals(kind, agent, state):
 
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw):
+        # Serve files from the frontend directory.
         super().__init__(*a, directory=FRONTEND, **kw)
 
-    def log_message(self, fmt, *args):       # keep the console quiet during demos
+    def log_message(self, fmt, *args):  # Hide routine static-file log entries.
         if "/api/" not in (args[0] if args else ""):
             super().log_message(fmt, *args)
 
     def end_headers(self):
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Cache-Control", "no-store")  # Do not cache API or UI responses.
         super().end_headers()
 
     def _json(self, obj, status=200):
-        body = json.dumps(obj).encode()
+        body = json.dumps(obj).encode()  # Convert the response into JSON bytes.
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
@@ -122,33 +126,39 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/api/info":
+            # Return game settings and the opening win probability.
             return self._json({"target": TARGET,
                                "first_player_win_prob": SOLVER.win_prob(0, 0, 0)})
+        # Serve frontend files for all other paths.
         return super().do_GET()
 
     def do_POST(self):
         try:
-            length = int(self.headers.get("Content-Length", 0))
-            data = json.loads(self.rfile.read(length) or b"{}")
-            state = parse_state(data["state"])
+            length = int(self.headers.get("Content-Length", 0))  # Read the request body size.
+            data = json.loads(self.rfile.read(length) or b"{}")  # Parse the JSON request.
+            state = parse_state(data["state"])  # Validate the submitted game state.
             if self.path == "/api/eval":
+                # Return exact values for the position.
                 return self._json(exact_values(*state))
             if self.path == "/api/move":
                 kind, agent = get_agent(data.get("agent", {}))
                 with LOCK:
-                    t0 = time.perf_counter()
-                    action = agent.choose_action(state)
-                    ms = (time.perf_counter() - t0) * 1000
-                    internals = agent_internals(kind, agent, state)
+                    t0 = time.perf_counter()  # Start the action timer.
+                    action = agent.choose_action(state)  # Ask the selected agent to act.
+                    ms = (time.perf_counter() - t0) * 1000  # Calculate decision time in milliseconds.
+                    internals = agent_internals(kind, agent, state)  # Gather extra agent details.
+                # Return the action and supporting values.
                 return self._json({"action": action, "ms": ms, "name": agent.name,
                                    "agent": internals, "exact": exact_values(*state)})
+            # Report unknown API paths.
             self._json({"error": "not found"}, 404)
         except (KeyError, ValueError, TypeError, json.JSONDecodeError) as e:
+            # Return invalid requests as JSON errors.
             self._json({"error": str(e)}, 400)
 
 
 if __name__ == "__main__":
-    srv = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    srv = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)  # Start a threaded local server.
     print(f"Pig UI running at http://localhost:{PORT}   (Ctrl+C to stop)")
     try:
         srv.serve_forever()
